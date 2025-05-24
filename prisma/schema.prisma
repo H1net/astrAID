@@ -1,0 +1,66 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String        @id @default(cuid())
+  email         String        @unique
+  passwordHash  String
+  name          String?
+  role          Role          @default(USER)
+  chats         Chat[]
+  plans         TrainingPlan[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model TrainingGuide {
+  id          String      @id @default(cuid())
+  title       String
+  slug        String      @unique
+  summary     String
+  contentMd   String      // markdown body
+  planSteps   PlanStep[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Chat {
+  id        String    @id @default(cuid())
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId    String?
+  messages  Json      // [{role:"user",content:"..."}, ...]
+  createdAt DateTime  @default(now())
+}
+
+model TrainingPlan {
+  id          String      @id @default(cuid())
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  title       String
+  steps       PlanStep[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model PlanStep {
+  id            String        @id @default(cuid())
+  trainingPlan  TrainingPlan  @relation(fields: [planId], references: [id], onDelete: Cascade)
+  planId        String
+  guide         TrainingGuide @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  guideId       String
+  dayOffset     Int           // e.g. 0 = day 1
+}
+
+enum Role {
+  USER
+  ADMIN
+}
